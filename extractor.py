@@ -60,7 +60,7 @@ def process_simulation(sim_path, h5file, output_number):
         depletion_group.attrs["zmax_kpc"] = zmax
 
         # Find the specific depletion_output_XXXXX.txt file
-        target_filename = f"depletion_output_{output_number}.txt"
+        target_filename = f"depletion_output_{output_number:05d}.txt"
         target_filepath = os.path.join(full_depl_path, target_filename)
         
         if os.path.exists(target_filepath):
@@ -73,7 +73,7 @@ def process_simulation(sim_path, h5file, output_number):
             print(f"Warning: {target_filename} not found in {depletion_folder}")
         
         # Find the corresponding dust content file
-        dust_content_folder = os.path.join(full_depl_path, "DustContent")
+        dust_content_folder = os.path.join(sim_path, "DustContent")
         if os.path.exists(dust_content_folder):
             dust_filename = f"dust_content_gal_rcyl{rmax}kpc_zcyl{zmax}kpc_output_{output_number:05d}.txt"
             dust_filepath = os.path.join(dust_content_folder, dust_filename)
