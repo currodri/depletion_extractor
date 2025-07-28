@@ -92,8 +92,8 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
                 label = f"{sim_name} / {depletion_config}"
                 data = group[output_key][()]
                 # Convert Oxygen and Hydrogen masses to abundances
-                OH = 12 + np.log10(data[:, DUST_IDX["O_mass"]] * mH_amu / (data[:, DUST_IDX["H_mass"]] * mO_amu))
-                metallicity = OH - OH_Asplund2009  # Relative to solar abundance
+                OH = data[:, DUST_IDX["O_mass"]] * mH_amu / (data[:, DUST_IDX["H_mass"]] * mO_amu)
+                metallicity = OH / OH_Asplund2009  # Relative to solar abundance
                 dtm = data[:, DUST_IDX["DTM"]]
                 dtg = data[:, DUST_IDX["DTG"]]
 
