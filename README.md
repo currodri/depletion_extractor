@@ -6,7 +6,7 @@
   <!-- <a href="https://depletion_extractor.netlify.app">Demo</a> -->
 </div>
 
-<h1 align="center">Depletion_extractor</h1>
+<h1 align="center">Depletion Extractor</h1>
 
 <p align="center">
   <img alt="Github top language" src="https://img.shields.io/github/languages/top/currodri/depletion_extractor?color=56BEB8">
@@ -265,7 +265,7 @@ with h5py.File('output_data.h5', 'r') as f:
 
 ## :memo: License ##
 
-This project is under license from MIT. For more details, see the [LICENSE](LICENSE.md) file.
+This project is under license from MIT. For more details, see the [LICENSE](LICENSE) file.
 
 
 Made with :heart: by <a href="https://github.com/currodri" target="_blank">Curro Rodriguez Montero</a>
