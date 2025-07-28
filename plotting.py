@@ -85,11 +85,11 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
             sim_group = f[sim_name]
             for depletion_config in sim_group:
                 group = sim_group[depletion_config]
-                output_key = f"output_{int(output_number):05d}"
+                output_key = f"dust_content_{int(output_number):05d}"
                 if output_key not in group:
                     continue
 
-                label = f"{sim_name} / {depletion_config}"
+                label = f"{sim_name}"
                 data = group[output_key][()]
 
                 # Convert Oxygen and Hydrogen masses to abundances
