@@ -98,8 +98,8 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
                 dtm = data[DUST_IDX["DTM"]]
                 dtg = data[DUST_IDX["DTG"]]
 
-                ax1.scatter(metallicity, dtm, 'o', label=label)
-                ax2.scatter(metallicity, dtg, 'o', label=label)
+                ax1.scatter(metallicity, dtm, marker='o', label=label)
+                ax2.scatter(metallicity, dtg, marker='o', label=label)
 
     ax1.set_xlabel(r"$(O/H)/(O/H)_\odot$")
     ax1.set_ylabel("Dust-to-Metal Ratio (DTM)")
