@@ -78,7 +78,7 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
     """
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
 
-    OH_Asplund2009  = 8.69  # Solar oxygen abundance (Asplund et al. 2009)
+    OH_Asplund2009  = 4.9e-4 # Solar oxygen abundance (Asplund et al. 2009)
 
     with h5py.File(h5_filename, "r") as f:
         for sim_name in f:
