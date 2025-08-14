@@ -50,26 +50,38 @@ def get_simulation_info_from_path(h5_filename):
             for depletion_config in sim_group:
                 group = sim_group[depletion_config]
                 
-                # Try to get simulation path from HDF5 attributes or use sim_name
-                # Since we don't store the full path, we'll extract info from sim_name
-                # Assuming sim_name format contains both type and metallicity info
+                # Try to get simulation path from HDF5 attributes
+                # If path was stored during extraction, use it to determine simulation type
+                if 'path' in group.attrs:
+                    path = group.attrs['path']
+                    # Extract simulation type from path structure: /root/simulation_type/simulation_name
+                    path_parts = path.split('/')
+                    if len(path_parts) >= 3:
+                        # Find the simulation type (e.g., G8, G9, G10) in the path
+                        for part in path_parts:
+                            if part in ['G8', 'G9', 'G10'] or part.startswith('G'):
+                                sim_types[sim_name] = part
+                                break
+                        else:
+                            sim_types[sim_name] = 'Unknown'
+                    else:
+                        sim_types[sim_name] = 'Unknown'
+                else:
+                    # Fallback: Extract simulation type from simulation name
+                    if 'G8' in sim_name or '1d10' in sim_name:
+                        sim_types[sim_name] = 'G8'
+                    elif 'G9' in sim_name or '1d11' in sim_name:
+                        sim_types[sim_name] = 'G9'
+                    elif 'G10' in sim_name or '1d12' in sim_name:
+                        sim_types[sim_name] = 'G10'
+                    else:
+                        # Try to extract type from beginning of name
+                        type_match = re.match(r'^([A-Za-z0-9]+)', sim_name)
+                        sim_types[sim_name] = type_match.group(1) if type_match else 'Unknown'
                 
                 # Extract metallicity from name
                 metallicity = extract_metallicity_from_name(sim_name)
                 metallicities[sim_name] = metallicity
-                
-                # Extract simulation type (this might need adjustment based on your naming convention)
-                # For now, we'll use a simple heuristic based on common patterns
-                if '1d10' in sim_name:
-                    sim_types[sim_name] = 'G8'
-                elif '1d11' in sim_name:
-                    sim_types[sim_name] = 'G9'
-                elif '1d12' in sim_name:
-                    sim_types[sim_name] = 'G10'
-                else:
-                    # Try to extract type from beginning of name
-                    type_match = re.match(r'^([A-Za-z0-9]+)', sim_name)
-                    sim_types[sim_name] = type_match.group(1) if type_match else 'Unknown'
                 
                 break  # Only need to process one config per simulation
     
@@ -91,17 +103,17 @@ def plot_depletion_comparison(h5_filename, output_number):
     
     # Define markers and colormaps for different simulation types
     type_config = {
-        'G8': {'marker': 'o', 'cmap': cm.viridis},
-        'G9': {'marker': 's', 'cmap': cm.plasma}, 
-        'G10': {'marker': '^', 'cmap': cm.inferno},
-        'Unknown': {'marker': 'D', 'cmap': cm.cividis}
+        'G8': {'marker': 'o', 'cmap': cm.Greens},
+        'G9': {'marker': 's', 'cmap': cm.Blues}, 
+        'G10': {'marker': '^', 'cmap': cm.Purples},
+        'Unknown': {'marker': 'D', 'cmap': cm.Greys}
     }
     
     # Get unique simulation types and assign markers/colormaps
     unique_types = list(set(sim_types.values()))
     available_markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h']
-    available_cmaps = [cm.viridis, cm.plasma, cm.inferno, cm.cividis, cm.magma, 
-                       cm.Blues, cm.Reds, cm.Greens, cm.Purples, cm.Oranges]
+    available_cmaps = [cm.Greens, cm.Blues, cm.Purples, cm.Greys, cm.Oranges, 
+                       cm.Reds, cm.YlOrBr, cm.YlOrRd, cm.BuPu, cm.GnBu]
     
     for i, sim_type in enumerate(unique_types):
         if sim_type not in type_config:
@@ -174,15 +186,6 @@ def plot_depletion_comparison(h5_filename, output_number):
     axes[-1].set_xlabel("Density (nH)")
     fig.suptitle(f"Depletion Comparison at Output {int(output_number):05d}", fontsize=15)
     
-    # Add colorbars for each simulation type
-    unique_sim_types = list(set(sim_types.values()))
-    for i, sim_type in enumerate(unique_sim_types):
-        cmap = type_config[sim_type]['cmap']
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-        sm.set_array([])
-        cbar = plt.colorbar(sm, ax=axes, aspect=30, pad=0.02 + i*0.05)
-        cbar.set_label(f'{sim_type} Metallicity (Zsun)', rotation=270, labelpad=15)
-    
     plt.tight_layout()
     plt.savefig(f"depletion_comparison_output_{int(output_number):05d}.png", format='png', dpi=300)
 
@@ -201,17 +204,17 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
     
     # Define markers and colormaps for different simulation types
     type_config = {
-        'G8': {'marker': 'o', 'cmap': cm.viridis},
-        'G9': {'marker': 's', 'cmap': cm.plasma}, 
-        'G10': {'marker': '^', 'cmap': cm.inferno},
-        'Unknown': {'marker': 'D', 'cmap': cm.cividis}
+        'G8': {'marker': 'o', 'cmap': cm.Greens},
+        'G9': {'marker': 's', 'cmap': cm.Blues}, 
+        'G10': {'marker': '^', 'cmap': cm.Purples},
+        'Unknown': {'marker': 'D', 'cmap': cm.Greys}
     }
     
     # Get unique simulation types and assign markers/colormaps
     unique_types = list(set(sim_types.values()))
     available_markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h']
-    available_cmaps = [cm.viridis, cm.plasma, cm.inferno, cm.cividis, cm.magma, 
-                       cm.Blues, cm.Reds, cm.Greens, cm.Purples, cm.Oranges]
+    available_cmaps = [cm.Greens, cm.Blues, cm.Purples, cm.Greys, cm.Oranges, 
+                       cm.Reds, cm.YlOrBr, cm.YlOrRd, cm.BuPu, cm.GnBu]
     
     for i, sim_type in enumerate(unique_types):
         if sim_type not in type_config:
@@ -285,16 +288,6 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
     # No legend on second subplot to avoid duplication
     
     fig.suptitle(f"DTM and DTG vs Metallicity at Output {int(output_number):05d}", fontsize=15)
-    
-    # Add colorbars for each simulation type
-    unique_sim_types = list(set(sim_types.values()))
-    for i, sim_type in enumerate(unique_sim_types):
-        cmap = type_config[sim_type]['cmap']
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-        sm.set_array([])
-        # Position colorbars to the right with some spacing
-        cbar = plt.colorbar(sm, ax=[ax1, ax2], aspect=30, pad=0.02 + i*0.05)
-        cbar.set_label(f'{sim_type} Metallicity (Zsun)', rotation=270, labelpad=15)
     
     plt.tight_layout()
     plt.savefig(f"dtm_dtg_vs_metallicity_output_{int(output_number):05d}.png", format='png', dpi=300)
