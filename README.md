@@ -82,7 +82,7 @@ This package extracts and processes **element depletion data** from cosmological
 
 ### Sample Dataset Included
 
-The package includes a sample HDF5 dataset (`depletion_data.h5`) containing processed simulation data that you can use immediately to test all functionality and reproduce the examples in this README. The dataset is small (95 KB) and contains representative data from multiple G8, G9, and G10 simulations with different metallicities and gas fraction configurations.
+The package includes a sample HDF5 dataset (`sample_data.h5`) containing processed simulation data that you can use immediately to test all functionality and reproduce the examples in this README. The dataset is small (95 KB) and contains representative data from multiple G8, G9, and G10 simulations with different metallicities and gas fraction configurations.
 
 ### Key Functionality:
 
@@ -158,15 +158,15 @@ $ cd depletion_extractor
 # Test the plotting functions with the sample data
 $ python -c "
 from plotting import plot_depletion_comparison, plot_dtm_dtg_vs_metallicity
-plot_depletion_comparison('depletion_data.h5', output_number=81)
-plot_dtm_dtg_vs_metallicity('depletion_data.h5', output_number=81)
+plot_depletion_comparison('sample_data.h5', output_number=81)
+plot_dtm_dtg_vs_metallicity('sample_data.h5', output_number=81)
 "
 
 # Or run the examples interactively
 $ python
 >>> from plotting import plot_depletion_comparison, plot_dtm_dtg_vs_metallicity
->>> plot_depletion_comparison('depletion_data.h5', 81)
->>> plot_dtm_dtg_vs_metallicity('depletion_data.h5', 81)
+>>> plot_depletion_comparison('sample_data.h5', 81)
+>>> plot_dtm_dtg_vs_metallicity('sample_data.h5', 81)
 ```
 
 This will generate comparison plots using the sample data, demonstrating the visualization capabilities without needing to process your own simulation data.
@@ -204,7 +204,7 @@ $ python main.py path_list.txt -f output_data.h5 -o 81
 
 # Arguments:
 # path_list.txt     : File containing simulation paths and parameters
-# -f output_data.h5 : Output HDF5 filename (optional, default: depletion_data.h5)
+# -f output_data.h5 : Output HDF5 filename (optional, default: sample_data.h5)
 # -o 81            : Output number to extract (optional, default: 81)
 ```
 
@@ -248,10 +248,10 @@ The package provides two main plotting functions:
 from plotting import plot_depletion_comparison, plot_dtm_dtg_vs_metallicity
 
 # Generate depletion comparison plots using sample data
-plot_depletion_comparison('depletion_data.h5', output_number=81)
+plot_depletion_comparison('sample_data.h5', output_number=81)
 
 # Generate dust ratio plots using sample data
-plot_dtm_dtg_vs_metallicity('depletion_data.h5', output_number=81)
+plot_dtm_dtg_vs_metallicity('sample_data.h5', output_number=81)
 ```
 
 ### Custom Analysis Example
@@ -339,14 +339,14 @@ def plot_custom_dtm_analysis(h5_filename, output_number=81):
     plt.show()
 
 # Usage example with sample data
-plot_custom_dtm_analysis('depletion_data.h5', output_number=81)
+plot_custom_dtm_analysis('sample_data.h5', output_number=81)
 ```
 
 ### Reading Individual Data Components
 
 ```python
 # Read specific simulation data from sample dataset
-with h5py.File('depletion_data.h5', 'r') as f:
+with h5py.File('sample_data.h5', 'r') as f:
     # List all available simulations in the sample dataset
     print("Available simulations:", list(f.keys()))
     
@@ -370,9 +370,9 @@ with h5py.File('depletion_data.h5', 'r') as f:
     zmax_dust = depl_group.attrs['zmax_dust_kpc']
     
     # Read depletion vs density data (2D array)
-    depletion_data = depl_group['output_00081'][()]
-    rho = depletion_data[:, 0]  # Gas density
-    c_depletion = depletion_data[:, 1]  # Carbon depletion fraction
+    sample_data = depl_group['output_00081'][()]
+    rho = sample_data[:, 0]  # Gas density
+    c_depletion = sample_data[:, 1]  # Carbon depletion fraction
     
     # Read integrated dust content data (1D array)
     dust_data = depl_group['dust_content_00081'][()]
@@ -411,12 +411,12 @@ def get_simulation_summary(h5_filename):
             print()
 
 # Explore the sample dataset
-get_simulation_summary('depletion_data.h5')
+get_simulation_summary('sample_data.h5')
 ```
 
 ### Sample Dataset Contents
 
-The included `depletion_data.h5` contains:
+The included `sample_data.h5` contains:
 - Multiple G8, G9, and G10 simulations
 - Various initial metallicity values (0.1, 0.3, 1.0, 3.0 Zsun)
 - Both regular and low gas fraction ('fg') models
