@@ -68,10 +68,10 @@ def get_simulation_info_from_path(h5_filename):
                             elif '1d12' in part:
                                 sim_types[sim_name] = 'G10'
                                 break
-                        else:
-                            sim_types[sim_name] = 'Unknown'
+                            else:
+                                raise ValueError(f"Unknown simulation type in path: {path}")
                     else:
-                        sim_types[sim_name] = 'Unknown'
+                        raise ValueError(f"Invalid path structure: {path}")
                 else:
                     # Fallback: Extract simulation type from simulation name
                     if '1d10' in sim_name:
@@ -81,9 +81,7 @@ def get_simulation_info_from_path(h5_filename):
                     elif '1d12' in sim_name:
                         sim_types[sim_name] = 'G10'
                     else:
-                        # Try to extract type from beginning of name
-                        type_match = re.match(r'^([A-Za-z0-9]+)', sim_name)
-                        sim_types[sim_name] = type_match.group(1) if type_match else 'Unknown'
+                        raise ValueError(f"Unknown simulation type in name: {sim_name}")
                 
                 # Extract metallicity from name
                 metallicity = extract_metallicity_from_name(sim_name)
@@ -106,6 +104,9 @@ def plot_depletion_comparison(h5_filename, output_number):
 
     # Get simulation information
     sim_types, metallicities = get_simulation_info_from_path(h5_filename)
+    print(f"Found {len(sim_types)} simulations with types and metallicities.")
+    print(f"Metallicities: {metallicities}")
+    print(f"Simulations: {list(sim_types.keys())}")
     
     # Define markers and colormaps for different simulation types
     type_config = {
