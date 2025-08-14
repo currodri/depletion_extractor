@@ -112,11 +112,11 @@ def plot_depletion_comparison(h5_filename, output_number):
     print(f"Metallicities: {metallicities}")
     print(f"Simulations: {list(sim_types.keys())}")
     
-    # Define markers and colormaps for different simulation types
+    # Define colormaps for different simulation types (markers determined by gas fraction)
     type_config = {
-        'G8': {'marker': 'o', 'cmap': cm.Greens},
-        'G9': {'marker': 's', 'cmap': cm.Blues}, 
-        'G10': {'marker': '^', 'cmap': cm.Purples}
+        'G8': {'cmap': cm.Greens},
+        'G9': {'cmap': cm.Blues}, 
+        'G10': {'cmap': cm.Purples}
     }
     
     # Get unique simulation types and verify they are supported
@@ -125,13 +125,14 @@ def plot_depletion_comparison(h5_filename, output_number):
         if sim_type not in type_config:
             raise ValueError(f"Unsupported simulation type '{sim_type}'. Only G8, G9, and G10 are supported.")
     
-    # Set up normalization for metallicity values per simulation type
+    # Set up normalization for metallicity values per simulation type (in log scale)
     type_norms = {}
     for sim_type in unique_types:
         # Get metallicities for this simulation type only
         type_metallicities = [metallicities[sim_name] for sim_name, s_type in sim_types.items() if s_type == sim_type]
         if len(set(type_metallicities)) > 1:
-            type_norms[sim_type] = plt.Normalize(vmin=min(type_metallicities), vmax=max(type_metallicities))
+            # Use log normalization
+            type_norms[sim_type] = plt.LogNorm(vmin=min(type_metallicities), vmax=max(type_metallicities))
         else:
             # If all metallicities are the same for this type, use a single color
             type_norms[sim_type] = plt.Normalize(vmin=0, vmax=1)
@@ -147,9 +148,10 @@ def plot_depletion_comparison(h5_filename, output_number):
                 if output_key not in group:
                     continue
 
-                # Get marker, colormap, and color for this simulation
+                # Get marker based on gas fraction type and colormap/color for this simulation
                 sim_type = sim_types[sim_name]
-                marker = type_config[sim_type]['marker']
+                # Determine marker based on gas fraction: 'fg' in name = low gas fraction (squares), else regular (circles)
+                marker = 's' if 'fg' in sim_name.lower() else 'o'
                 cmap = type_config[sim_type]['cmap']
                 metallicity = metallicities[sim_name]
                 norm = type_norms[sim_type]  # Use the normalization for this simulation type
@@ -166,16 +168,23 @@ def plot_depletion_comparison(h5_filename, output_number):
                         alpha=0.7, capsize=4, color=color
                     )
 
-    # Create custom legend showing simulation types only
+    # Create custom legend showing simulation types and gas fraction types
     legend_elements = []
     unique_sim_types = list(set(sim_types.values()))
+    
+    # Add simulation type legend entries (using representative colors)
     for sim_type in unique_sim_types:
-        marker = type_config[sim_type]['marker']
         cmap = type_config[sim_type]['cmap']
         # Use middle color of the colormap as representative
         representative_color = cmap(0.5)
-        legend_elements.append(plt.Line2D([0], [0], marker=marker, color=representative_color,
+        legend_elements.append(plt.Line2D([0], [0], marker='o', color=representative_color,
                                         linestyle='-', markersize=10, label=f'{sim_type}'))
+    
+    # Add gas fraction type legend entries
+    legend_elements.append(plt.Line2D([0], [0], marker='o', color='gray',
+                                    linestyle='-', markersize=10, label='Regular gas fraction'))
+    legend_elements.append(plt.Line2D([0], [0], marker='s', color='gray',
+                                    linestyle='-', markersize=10, label='Low gas fraction (fg)'))
 
     # Format plots
     for i, elem in enumerate(elements):
@@ -209,11 +218,11 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
     # Get simulation information
     sim_types, metallicities = get_simulation_info_from_path(h5_filename)
     
-    # Define markers and colormaps for different simulation types
+    # Define colormaps for different simulation types (markers determined by gas fraction)
     type_config = {
-        'G8': {'marker': 'o', 'cmap': cm.Greens},
-        'G9': {'marker': 's', 'cmap': cm.Blues}, 
-        'G10': {'marker': '^', 'cmap': cm.Purples}
+        'G8': {'cmap': cm.Greens},
+        'G9': {'cmap': cm.Blues}, 
+        'G10': {'cmap': cm.Purples}
     }
     
     # Get unique simulation types and verify they are supported
@@ -222,13 +231,14 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
         if sim_type not in type_config:
             raise ValueError(f"Unsupported simulation type '{sim_type}'. Only G8, G9, and G10 are supported.")
     
-    # Set up normalization for metallicity values per simulation type
+    # Set up normalization for metallicity values per simulation type (in log scale)
     type_norms = {}
     for sim_type in unique_types:
         # Get metallicities for this simulation type only
         type_metallicities = [metallicities[sim_name] for sim_name, s_type in sim_types.items() if s_type == sim_type]
         if len(set(type_metallicities)) > 1:
-            type_norms[sim_type] = plt.Normalize(vmin=min(type_metallicities), vmax=max(type_metallicities))
+            # Use log normalization
+            type_norms[sim_type] = plt.LogNorm(vmin=min(type_metallicities), vmax=max(type_metallicities))
         else:
             # If all metallicities are the same for this type, use a single color
             type_norms[sim_type] = plt.Normalize(vmin=0, vmax=1)
@@ -242,9 +252,10 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
                 if output_key not in group:
                     continue
 
-                # Get marker, colormap, and color for this simulation
+                # Get marker based on gas fraction type and colormap/color for this simulation
                 sim_type = sim_types[sim_name]
-                marker = type_config[sim_type]['marker']
+                # Determine marker based on gas fraction: 'fg' in name = low gas fraction (squares), else regular (circles)
+                marker = 's' if 'fg' in sim_name.lower() else 'o'
                 cmap = type_config[sim_type]['cmap']
                 metallicity = metallicities[sim_name]
                 norm = type_norms[sim_type]  # Use the normalization for this simulation type
@@ -261,16 +272,23 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
                 ax1.scatter(metallicity_measured, dtm, marker=marker, color=color, s=100)
                 ax2.scatter(metallicity_measured, dtg, marker=marker, color=color, s=100)
 
-    # Create custom legend showing simulation types only
+    # Create custom legend showing simulation types and gas fraction types
     legend_elements = []
     unique_sim_types = list(set(sim_types.values()))
+    
+    # Add simulation type legend entries (using representative colors)
     for sim_type in unique_sim_types:
-        marker = type_config[sim_type]['marker']
         cmap = type_config[sim_type]['cmap']
         # Use middle color of the colormap as representative
         representative_color = cmap(0.5)
-        legend_elements.append(plt.Line2D([0], [0], marker=marker, color=representative_color,
+        legend_elements.append(plt.Line2D([0], [0], marker='o', color=representative_color,
                                         linestyle='None', markersize=12, label=f'{sim_type}'))
+    
+    # Add gas fraction type legend entries
+    legend_elements.append(plt.Line2D([0], [0], marker='o', color='gray',
+                                    linestyle='None', markersize=12, label='Regular gas fraction'))
+    legend_elements.append(plt.Line2D([0], [0], marker='s', color='gray',
+                                    linestyle='None', markersize=12, label='Low gas fraction (fg)'))
 
     ax1.set_xlabel(r"$(O/H)/(O/H)_\odot$")
     ax1.set_ylabel("Dust-to-Metal Ratio (DTM)")
