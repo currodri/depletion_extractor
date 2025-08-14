@@ -51,10 +51,14 @@ def get_simulation_info_from_path(h5_filename):
             # Check if simulation metadata is stored as attributes
             if 'simulation_type' in sim_group.attrs and 'initial_metallicity' in sim_group.attrs:
                 # Use pre-stored attributes (preferred method)
-                sim_types[sim_name] = sim_group.attrs['simulation_type']
+                sim_type = sim_group.attrs['simulation_type']
+                if sim_type not in ['G8', 'G9', 'G10']:
+                    raise ValueError(f"Invalid simulation type '{sim_type}' for simulation '{sim_name}'. Must be one of G8, G9, or G10.")
+                sim_types[sim_name] = sim_type
                 metallicities[sim_name] = sim_group.attrs['initial_metallicity']
             else:
                 # Fallback: Extract from name and path (for backward compatibility)
+                sim_type = None
                 for depletion_config in sim_group:
                     group = sim_group[depletion_config]
                     
@@ -63,22 +67,25 @@ def get_simulation_info_from_path(h5_filename):
                         path = group.attrs['path']
                         # Extract simulation type from path structure
                         path_parts = path.split('/')
-                        sim_type = 'Unknown'
                         for part in path_parts:
-                            if part in ['G8', 'G9', 'G10'] or part.startswith('G'):
+                            if part in ['G8', 'G9', 'G10']:
                                 sim_type = part
                                 break
-                        sim_types[sim_name] = sim_type
-                    else:
-                        # Extract simulation type from simulation name
+                    
+                    # If not found in path, try simulation name
+                    if sim_type is None:
                         if 'G8' in sim_name or '1d10' in sim_name:
-                            sim_types[sim_name] = 'G8'
+                            sim_type = 'G8'
                         elif 'G9' in sim_name or '1d11' in sim_name:
-                            sim_types[sim_name] = 'G9'
+                            sim_type = 'G9'
                         elif 'G10' in sim_name or '1d12' in sim_name:
-                            sim_types[sim_name] = 'G10'
-                        else:
-                            sim_types[sim_name] = 'Unknown'
+                            sim_type = 'G10'
+                    
+                    # Raise error if simulation type cannot be determined
+                    if sim_type is None:
+                        raise ValueError(f"Cannot determine simulation type for simulation '{sim_name}'. Must be one of G8, G9, or G10.")
+                    
+                    sim_types[sim_name] = sim_type
                     
                     # Extract metallicity from name
                     metallicity = extract_metallicity_from_name(sim_name)
@@ -109,22 +116,14 @@ def plot_depletion_comparison(h5_filename, output_number):
     type_config = {
         'G8': {'marker': 'o', 'cmap': cm.Greens},
         'G9': {'marker': 's', 'cmap': cm.Blues}, 
-        'G10': {'marker': '^', 'cmap': cm.Purples},
-        'Unknown': {'marker': 'D', 'cmap': cm.Greys}
+        'G10': {'marker': '^', 'cmap': cm.Purples}
     }
     
-    # Get unique simulation types and assign markers/colormaps
+    # Get unique simulation types and verify they are supported
     unique_types = list(set(sim_types.values()))
-    available_markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h']
-    available_cmaps = [cm.Greens, cm.Blues, cm.Purples, cm.Greys, cm.Oranges, 
-                       cm.Reds, cm.YlOrBr, cm.YlOrRd, cm.BuPu, cm.GnBu]
-    
-    for i, sim_type in enumerate(unique_types):
+    for sim_type in unique_types:
         if sim_type not in type_config:
-            type_config[sim_type] = {
-                'marker': available_markers[i % len(available_markers)],
-                'cmap': available_cmaps[i % len(available_cmaps)]
-            }
+            raise ValueError(f"Unsupported simulation type '{sim_type}'. Only G8, G9, and G10 are supported.")
     
     # Set up normalization for metallicity values
     metallicity_values = list(metallicities.values())
@@ -210,22 +209,14 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
     type_config = {
         'G8': {'marker': 'o', 'cmap': cm.Greens},
         'G9': {'marker': 's', 'cmap': cm.Blues}, 
-        'G10': {'marker': '^', 'cmap': cm.Purples},
-        'Unknown': {'marker': 'D', 'cmap': cm.Greys}
+        'G10': {'marker': '^', 'cmap': cm.Purples}
     }
     
-    # Get unique simulation types and assign markers/colormaps
+    # Get unique simulation types and verify they are supported
     unique_types = list(set(sim_types.values()))
-    available_markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h']
-    available_cmaps = [cm.Greens, cm.Blues, cm.Purples, cm.Greys, cm.Oranges, 
-                       cm.Reds, cm.YlOrBr, cm.YlOrRd, cm.BuPu, cm.GnBu]
-    
-    for i, sim_type in enumerate(unique_types):
+    for sim_type in unique_types:
         if sim_type not in type_config:
-            type_config[sim_type] = {
-                'marker': available_markers[i % len(available_markers)],
-                'cmap': available_cmaps[i % len(available_cmaps)]
-            }
+            raise ValueError(f"Unsupported simulation type '{sim_type}'. Only G8, G9, and G10 are supported.")
     
     # Set up normalization for metallicity values
     metallicity_values = list(metallicities.values())

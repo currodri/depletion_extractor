@@ -49,11 +49,24 @@ def process_simulation(sim_path, h5file, output_number, target_rmax_depl, target
     
     # Extract simulation type from path
     path_parts = sim_path.split(os.sep)
-    sim_type = 'Unknown'
+    sim_type = None
     for part in path_parts:
-        if part in ['G8', 'G9', 'G10'] or part.startswith('G'):
+        if part in ['G8', 'G9', 'G10']:
             sim_type = part
             break
+    
+    # If not found in path, try to extract from simulation name
+    if sim_type is None:
+        if 'G8' in sim_name or '1d10' in sim_name:
+            sim_type = 'G8'
+        elif 'G9' in sim_name or '1d11' in sim_name:
+            sim_type = 'G9'
+        elif 'G10' in sim_name or '1d12' in sim_name:
+            sim_type = 'G10'
+    
+    # Raise error if simulation type cannot be determined
+    if sim_type is None:
+        raise ValueError(f"Cannot determine simulation type from path '{sim_path}' or name '{sim_name}'. Must be one of G8, G9, or G10.")
     
     # Extract initial metallicity from simulation name
     metallicity_match = re.search(r'(\d*\.?\d+)Zsun', sim_name)
