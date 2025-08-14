@@ -18,10 +18,15 @@ def extract_rmax_zmax(name):
 
 def get_sim_name(path):
     """
-    Extracts the name of the simulation from its full path.
-    E.g., '/data/sim1' -> 'sim1'
+    Extracts the last two components of the simulation path.
+    E.g., '/data/simtype/sim1' -> 'simtype/sim1'
     """
-    return os.path.basename(os.path.abspath(path))
+    abs_path = os.path.abspath(path)
+    parts = abs_path.strip(os.sep).split(os.sep)
+    if len(parts) >= 2:
+        return os.path.join(parts[-2], parts[-1])
+    else:
+        return parts[-1] if parts else ""
 
 def load_depletion_file(filepath):
     """
