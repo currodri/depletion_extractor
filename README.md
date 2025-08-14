@@ -426,11 +426,12 @@ The included `sample_data.h5` contains:
 
 ## :memo: License ##
 
-This project is under license from MIT. For more details, see the [LICENSE](LICENSE) file.
+This project is licensed under the MIT License. For more details, see the [LICENSE](LICENSE) file.
 
+---
 
-Made with :heart: by <a href="https://github.com/currodri" target="_blank">Curro Rodriguez Montero</a>
+Made with :heart: by [Curro Rodriguez Montero](https://github.com/currodri)
 
-&#xa0;
+<br>
 
-<a href="#top">Back to top</a>
+[Back to top](#top)
