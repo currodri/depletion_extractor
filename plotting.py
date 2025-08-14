@@ -57,10 +57,16 @@ def get_simulation_info_from_path(h5_filename):
                     # Extract simulation type from path structure: /root/simulation_type/simulation_name
                     path_parts = path.split('/')
                     if len(path_parts) >= 3:
-                        # Find the simulation type (e.g., G8, G9, G10) in the path
+                        # Find the simulation type (e.g., 1d10, 1d11, 1d12) in the path
                         for part in path_parts:
-                            if part in ['G8', 'G9', 'G10'] or part.startswith('G'):
-                                sim_types[sim_name] = part
+                            if '1d10' in part:
+                                sim_types[sim_name] = 'G8'
+                                break
+                            elif '1d11' in part:
+                                sim_types[sim_name] = 'G9'
+                                break
+                            elif '1d12' in part:
+                                sim_types[sim_name] = 'G10'
                                 break
                         else:
                             sim_types[sim_name] = 'Unknown'
@@ -68,11 +74,11 @@ def get_simulation_info_from_path(h5_filename):
                         sim_types[sim_name] = 'Unknown'
                 else:
                     # Fallback: Extract simulation type from simulation name
-                    if 'G8' in sim_name or '1d10' in sim_name:
+                    if '1d10' in sim_name:
                         sim_types[sim_name] = 'G8'
-                    elif 'G9' in sim_name or '1d11' in sim_name:
+                    elif '1d11' in sim_name:
                         sim_types[sim_name] = 'G9'
-                    elif 'G10' in sim_name or '1d12' in sim_name:
+                    elif '1d12' in sim_name:
                         sim_types[sim_name] = 'G10'
                     else:
                         # Try to extract type from beginning of name
