@@ -422,9 +422,8 @@ The included `sample_data.h5` contains:
 - Both regular and low gas fraction ('fg') models
 - Different spatial region configurations
 - All processed for output 81 (corresponding to specific simulation time)
-```
 
-## :memo: License ##
+### License
 
 This project is licensed under the MIT License. For more details, see the [LICENSE](LICENSE) file.
 
