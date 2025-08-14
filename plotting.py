@@ -168,8 +168,8 @@ def plot_depletion_comparison(h5_filename, output_number):
                         alpha=0.7, capsize=4, color=color
                     )
 
-    # Create custom legend showing simulation types and gas fraction types
-    legend_elements = []
+    # Create custom legend showing simulation types
+    legend_elements_sim = []
     unique_sim_types = list(set(sim_types.values()))
     
     # Add simulation type legend entries (using representative colors)
@@ -177,13 +177,14 @@ def plot_depletion_comparison(h5_filename, output_number):
         cmap = type_config[sim_type]['cmap']
         # Use middle color of the colormap as representative
         representative_color = cmap(0.5)
-        legend_elements.append(plt.Line2D([0], [0], marker='o', color=representative_color,
+        legend_elements_sim.append(plt.Line2D([0], [0], marker='o', color=representative_color,
                                         linestyle='-', markersize=10, label=f'{sim_type}'))
     
-    # Add gas fraction type legend entries
-    legend_elements.append(plt.Line2D([0], [0], marker='o', color='gray',
+    # Create separate legend for gas fraction types
+    legend_elements_gas = []
+    legend_elements_gas.append(plt.Line2D([0], [0], marker='o', color='gray',
                                     linestyle='-', markersize=10, label='Regular gas fraction'))
-    legend_elements.append(plt.Line2D([0], [0], marker='s', color='gray',
+    legend_elements_gas.append(plt.Line2D([0], [0], marker='s', color='gray',
                                     linestyle='-', markersize=10, label='Low gas fraction (fg)'))
 
     # Format plots
@@ -196,8 +197,13 @@ def plot_depletion_comparison(h5_filename, output_number):
         # Add also minor ticks
         ax.minorticks_on()
         ax.tick_params(which='both', direction='in', top=True, right=True)
-        if i == 0:  # Only add legend to the first subplot
-            ax.legend(handles=legend_elements, fontsize=10, loc="lower left", frameon=False)
+        if i == 0:  # Only add legends to the first subplot
+            # Add simulation type legend
+            leg1 = ax.legend(handles=legend_elements_sim, fontsize=10, loc="lower left", frameon=True, title="Simulation Type")
+            # Add gas fraction legend
+            leg2 = ax.legend(handles=legend_elements_gas, fontsize=10, loc="upper right", frameon=True, title="Gas Fraction")
+            # Add the first legend back since the second one replaces it
+            ax.add_artist(leg1)
 
     axes[-1].set_xlabel("Density (nH)")
     fig.suptitle(f"Depletion Comparison at Output {int(output_number):05d}", fontsize=15)
@@ -272,8 +278,8 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
                 ax1.scatter(metallicity_measured, dtm, marker=marker, color=color, s=100)
                 ax2.scatter(metallicity_measured, dtg, marker=marker, color=color, s=100)
 
-    # Create custom legend showing simulation types and gas fraction types
-    legend_elements = []
+    # Create custom legend showing simulation types
+    legend_elements_sim = []
     unique_sim_types = list(set(sim_types.values()))
     
     # Add simulation type legend entries (using representative colors)
@@ -281,13 +287,14 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
         cmap = type_config[sim_type]['cmap']
         # Use middle color of the colormap as representative
         representative_color = cmap(0.5)
-        legend_elements.append(plt.Line2D([0], [0], marker='o', color=representative_color,
+        legend_elements_sim.append(plt.Line2D([0], [0], marker='o', color=representative_color,
                                         linestyle='None', markersize=12, label=f'{sim_type}'))
     
-    # Add gas fraction type legend entries
-    legend_elements.append(plt.Line2D([0], [0], marker='o', color='gray',
+    # Create separate legend for gas fraction types
+    legend_elements_gas = []
+    legend_elements_gas.append(plt.Line2D([0], [0], marker='o', color='gray',
                                     linestyle='None', markersize=12, label='Regular gas fraction'))
-    legend_elements.append(plt.Line2D([0], [0], marker='s', color='gray',
+    legend_elements_gas.append(plt.Line2D([0], [0], marker='s', color='gray',
                                     linestyle='None', markersize=12, label='Low gas fraction (fg)'))
 
     ax1.set_xlabel(r"$(O/H)/(O/H)_\odot$")
@@ -297,7 +304,12 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
     ax1.grid(True, which="both", ls="--", lw=0.3)
     ax1.minorticks_on()
     ax1.tick_params(which='both', direction='in', top=True, right=True)
-    ax1.legend(handles=legend_elements, fontsize=10, loc="upper left", frameon=False)
+    # Add simulation type legend
+    leg1 = ax1.legend(handles=legend_elements_sim, fontsize=10, loc="upper left", frameon=True, title="Simulation Type")
+    # Add gas fraction legend
+    leg2 = ax1.legend(handles=legend_elements_gas, fontsize=10, loc="lower right", frameon=True, title="Gas Fraction")
+    # Add the first legend back since the second one replaces it
+    ax1.add_artist(leg1)
     
     ax2.set_xlabel(r"$(O/H)/(O/H)_\odot$")
     ax2.set_ylabel("Dust-to-Gas Ratio (DTG)")
