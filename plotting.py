@@ -125,13 +125,16 @@ def plot_depletion_comparison(h5_filename, output_number):
         if sim_type not in type_config:
             raise ValueError(f"Unsupported simulation type '{sim_type}'. Only G8, G9, and G10 are supported.")
     
-    # Set up normalization for metallicity values
-    metallicity_values = list(metallicities.values())
-    if len(set(metallicity_values)) > 1:
-        norm = plt.Normalize(vmin=min(metallicity_values), vmax=max(metallicity_values))
-    else:
-        # If all metallicities are the same, use a single color
-        norm = plt.Normalize(vmin=0, vmax=1)
+    # Set up normalization for metallicity values per simulation type
+    type_norms = {}
+    for sim_type in unique_types:
+        # Get metallicities for this simulation type only
+        type_metallicities = [metallicities[sim_name] for sim_name, s_type in sim_types.items() if s_type == sim_type]
+        if len(set(type_metallicities)) > 1:
+            type_norms[sim_type] = plt.Normalize(vmin=min(type_metallicities), vmax=max(type_metallicities))
+        else:
+            # If all metallicities are the same for this type, use a single color
+            type_norms[sim_type] = plt.Normalize(vmin=0, vmax=1)
 
     fig, axes = plt.subplots(n_elements, 1, figsize=(5, 3* n_elements), sharex=True)
 
@@ -149,6 +152,7 @@ def plot_depletion_comparison(h5_filename, output_number):
                 marker = type_config[sim_type]['marker']
                 cmap = type_config[sim_type]['cmap']
                 metallicity = metallicities[sim_name]
+                norm = type_norms[sim_type]  # Use the normalization for this simulation type
                 color = cmap(norm(metallicity))
                 
                 data = group[output_key][()]
@@ -218,13 +222,16 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
         if sim_type not in type_config:
             raise ValueError(f"Unsupported simulation type '{sim_type}'. Only G8, G9, and G10 are supported.")
     
-    # Set up normalization for metallicity values
-    metallicity_values = list(metallicities.values())
-    if len(set(metallicity_values)) > 1:
-        norm = plt.Normalize(vmin=min(metallicity_values), vmax=max(metallicity_values))
-    else:
-        # If all metallicities are the same, use a single color
-        norm = plt.Normalize(vmin=0, vmax=1)
+    # Set up normalization for metallicity values per simulation type
+    type_norms = {}
+    for sim_type in unique_types:
+        # Get metallicities for this simulation type only
+        type_metallicities = [metallicities[sim_name] for sim_name, s_type in sim_types.items() if s_type == sim_type]
+        if len(set(type_metallicities)) > 1:
+            type_norms[sim_type] = plt.Normalize(vmin=min(type_metallicities), vmax=max(type_metallicities))
+        else:
+            # If all metallicities are the same for this type, use a single color
+            type_norms[sim_type] = plt.Normalize(vmin=0, vmax=1)
 
     with h5py.File(h5_filename, "r") as f:
         for sim_name in f:
@@ -240,6 +247,7 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
                 marker = type_config[sim_type]['marker']
                 cmap = type_config[sim_type]['cmap']
                 metallicity = metallicities[sim_name]
+                norm = type_norms[sim_type]  # Use the normalization for this simulation type
                 color = cmap(norm(metallicity))
                 
                 data = group[output_key][()]
