@@ -19,12 +19,13 @@ def extract_rmax_zmax(name):
 def get_sim_name(path):
     """
     Extracts the last two components of the simulation path.
-    E.g., '/data/simtype/sim1' -> 'simtype/sim1'
+    E.g., '/data/simtype/sim1' -> 'simtype_sim1'
+    Uses underscore as separator since HDF5 group names cannot contain forward slashes.
     """
     abs_path = os.path.abspath(path)
     parts = abs_path.strip(os.sep).split(os.sep)
     if len(parts) >= 2:
-        return os.path.join(parts[-2], parts[-1])
+        return f"{parts[-2]}_{parts[-1]}"
     else:
         return parts[-1] if parts else ""
 
@@ -45,6 +46,23 @@ def process_simulation(sim_path, h5file, output_number, target_rmax_depl, target
     """
     sim_name = get_sim_name(sim_path)
     sim_group = h5file.require_group(sim_name)
+    
+    # Extract simulation type from path
+    path_parts = sim_path.split(os.sep)
+    sim_type = 'Unknown'
+    for part in path_parts:
+        if part in ['G8', 'G9', 'G10'] or part.startswith('G'):
+            sim_type = part
+            break
+    
+    # Extract initial metallicity from simulation name
+    metallicity_match = re.search(r'(\d*\.?\d+)Zsun', sim_name)
+    initial_metallicity = float(metallicity_match.group(1)) if metallicity_match else 1.0
+    
+    # Store simulation metadata as attributes
+    sim_group.attrs["simulation_type"] = sim_type
+    sim_group.attrs["initial_metallicity"] = initial_metallicity
+    sim_group.attrs["original_path"] = sim_path
 
     # Construct the expected depletion folder name
     depletion_folder = f"DEPLETION_rmax{target_rmax_depl}kpc_zmax{target_zmax_depl}kpc"
@@ -60,6 +78,7 @@ def process_simulation(sim_path, h5file, output_number, target_rmax_depl, target
     depletion_group.attrs["zmax_depl_kpc"] = target_zmax_depl
     depletion_group.attrs["rmax_dust_kpc"] = target_rmax_dust
     depletion_group.attrs["zmax_dust_kpc"] = target_zmax_dust
+    depletion_group.attrs["path"] = sim_path  # Store original path for simulation type detection
 
     # Find the specific depletion_output_XXXXX.txt file
     target_filename = f"depletion_output_{output_number:05d}.txt"

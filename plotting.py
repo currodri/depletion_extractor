@@ -38,7 +38,7 @@ def extract_metallicity_from_name(sim_name):
 
 def get_simulation_info_from_path(h5_filename):
     """
-    Extract simulation type and metallicity information from HDF5 file paths.
+    Extract simulation type and metallicity information from HDF5 file attributes.
     Returns dictionaries mapping sim_name to sim_type and metallicity.
     """
     sim_types = {}
@@ -47,49 +47,44 @@ def get_simulation_info_from_path(h5_filename):
     with h5py.File(h5_filename, "r") as f:
         for sim_name in f:
             sim_group = f[sim_name]
-            for depletion_config in sim_group:
-                group = sim_group[depletion_config]
-                
-                # Try to get simulation path from HDF5 attributes
-                # If path was stored during extraction, use it to determine simulation type
-                if 'path' in group.attrs:
-                    path = group.attrs['path']
-                    print(f"Processing path: {path}")
-                    # Extract simulation type from path structure: /root/simulation_type/simulation_name
-                    path_parts = path.split('/')
-                    if len(path_parts) >= 3:
-                        # Find the simulation type (e.g., 1d10, 1d11, 1d12) in the path
+            
+            # Check if simulation metadata is stored as attributes
+            if 'simulation_type' in sim_group.attrs and 'initial_metallicity' in sim_group.attrs:
+                # Use pre-stored attributes (preferred method)
+                sim_types[sim_name] = sim_group.attrs['simulation_type']
+                metallicities[sim_name] = sim_group.attrs['initial_metallicity']
+            else:
+                # Fallback: Extract from name and path (for backward compatibility)
+                for depletion_config in sim_group:
+                    group = sim_group[depletion_config]
+                    
+                    # Try to get simulation path from HDF5 attributes
+                    if 'path' in group.attrs:
+                        path = group.attrs['path']
+                        # Extract simulation type from path structure
+                        path_parts = path.split('/')
+                        sim_type = 'Unknown'
                         for part in path_parts:
-                            if '1d10' in part:
-                                sim_types[sim_name] = 'G8'
+                            if part in ['G8', 'G9', 'G10'] or part.startswith('G'):
+                                sim_type = part
                                 break
-                            elif '1d11' in part:
-                                sim_types[sim_name] = 'G9'
-                                break
-                            elif '1d12' in part:
-                                sim_types[sim_name] = 'G10'
-                                break
-                            else:
-                                raise ValueError(f"Unknown simulation type in path: {path}")
+                        sim_types[sim_name] = sim_type
                     else:
-                        raise ValueError(f"Invalid path structure: {path}")
-                else:
-                    # Fallback: Extract simulation type from simulation name
-                    print(f"Processing simulation name: {sim_name}")
-                    if '1d10' in sim_name:
-                        sim_types[sim_name] = 'G8'
-                    elif '1d11' in sim_name:
-                        sim_types[sim_name] = 'G9'
-                    elif '1d12' in sim_name:
-                        sim_types[sim_name] = 'G10'
-                    else:
-                        raise ValueError(f"Unknown simulation type in name: {sim_name}")
-                
-                # Extract metallicity from name
-                metallicity = extract_metallicity_from_name(sim_name)
-                metallicities[sim_name] = metallicity
-                
-                break  # Only need to process one config per simulation
+                        # Extract simulation type from simulation name
+                        if 'G8' in sim_name or '1d10' in sim_name:
+                            sim_types[sim_name] = 'G8'
+                        elif 'G9' in sim_name or '1d11' in sim_name:
+                            sim_types[sim_name] = 'G9'
+                        elif 'G10' in sim_name or '1d12' in sim_name:
+                            sim_types[sim_name] = 'G10'
+                        else:
+                            sim_types[sim_name] = 'Unknown'
+                    
+                    # Extract metallicity from name
+                    metallicity = extract_metallicity_from_name(sim_name)
+                    metallicities[sim_name] = metallicity
+                    
+                    break  # Only need to process one config per simulation
     
     return sim_types, metallicities
 
