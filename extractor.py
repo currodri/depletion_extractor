@@ -44,6 +44,7 @@ def process_simulation(sim_path, h5file, output_number, target_rmax_depl, target
     - Stores the output as a dataset inside an HDF5 group.
     """
     sim_name = get_sim_name(sim_path)
+    print(f"Processing simulation: {sim_name}")
     sim_group = h5file.require_group(sim_name)
 
     # Construct the expected depletion folder name
