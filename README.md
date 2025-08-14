@@ -80,6 +80,10 @@ pip install numpy h5py matplotlib
 
 This package extracts and processes **element depletion data** from cosmological galaxy simulations. Element depletion refers to the process where metals (elements heavier than hydrogen and helium) are removed from the gas phase and incorporated into dust grains in the interstellar medium.
 
+### Sample Dataset Included
+
+The package includes a sample HDF5 dataset (`depletion_data.h5`) containing processed simulation data that you can use immediately to test all functionality and reproduce the examples in this README. The dataset is small (95 KB) and contains representative data from multiple G8, G9, and G10 simulations with different metallicities and gas fraction configurations.
+
 ### Key Functionality:
 
 1. **Data Extraction**: Reads depletion output files from RAMSES simulations for specific spatial regions defined by radial (`rmax`) and vertical (`zmax`) extents
@@ -97,15 +101,22 @@ The output HDF5 file is organized hierarchically as follows:
 
 ```
 output_file.h5
-├── simulation_1/
+├── simulation_type_simulation_name/          # Simulation names now use underscore separator
+│   ├── attributes:                           # Simulation-level metadata
+│   │   ├── simulation_type                   # G8, G9, or G10
+│   │   ├── initial_metallicity               # Initial metallicity value
+│   │   └── original_path                     # Full path to simulation directory
 │   └── DEPLETION_rmax{X}kpc_zmax{Y}kpc/
-│       ├── output_{NNNNN}           # 2D array: depletion data vs density
-│       ├── dust_content_{NNNNN}     # 1D array: integrated dust/gas properties
+│       ├── output_{NNNNN}                    # 2D array: depletion data vs density
+│       ├── dust_content_{NNNNN}              # 1D array: integrated dust/gas properties
 │       └── attributes:
-│           ├── rmax_kpc             # Radial extent in kpc
-│           ├── zmax_kpc             # Vertical extent in kpc  
-│           └── dust_content_columns # Column names for dust_content data
-├── simulation_2/
+│           ├── rmax_depl_kpc                 # Radial extent for depletion analysis
+│           ├── zmax_depl_kpc                 # Vertical extent for depletion analysis
+│           ├── rmax_dust_kpc                 # Radial extent for dust content analysis
+│           ├── zmax_dust_kpc                 # Vertical extent for dust content analysis
+│           ├── path                          # Original simulation path
+│           └── dust_content_columns          # Column names for dust_content data
+├── simulation_type_simulation_name/
 │   └── DEPLETION_rmax{X}kpc_zmax{Y}kpc/
 │       └── ...
 └── ...
@@ -133,18 +144,51 @@ output_file.h5
 
 ## :checkered_flag: Usage ##
 
+### Quick Start with Sample Data
+
+The easiest way to get started is using the included sample dataset:
+
+```bash
+# Clone this project
+$ git clone https://github.com/currodri/depletion_extractor
+
+# Access the directory
+$ cd depletion_extractor
+
+# Test the plotting functions with the sample data
+$ python -c "
+from plotting import plot_depletion_comparison, plot_dtm_dtg_vs_metallicity
+plot_depletion_comparison('depletion_data.h5', output_number=81)
+plot_dtm_dtg_vs_metallicity('depletion_data.h5', output_number=81)
+"
+
+# Or run the examples interactively
+$ python
+>>> from plotting import plot_depletion_comparison, plot_dtm_dtg_vs_metallicity
+>>> plot_depletion_comparison('depletion_data.h5', 81)
+>>> plot_dtm_dtg_vs_metallicity('depletion_data.h5', 81)
+```
+
+This will generate comparison plots using the sample data, demonstrating the visualization capabilities without needing to process your own simulation data.
+
+### Processing Your Own Data
+
+To extract data from your own RAMSES simulations:
+
 ### Input File Format
 
-Create a text file listing simulation paths with their corresponding rmax and zmax values:
+Create a text file listing simulation paths with their corresponding rmax/zmax values for both depletion and dust content analysis:
 
 ```
 # path_list.txt
-/path/to/simulation1 4.0 1.0
-/path/to/simulation2 8.0 0.2  
-/path/to/simulation3 12.0 0.5
+/path/to/simulation1 4.0 1.0 4.0 1.0
+/path/to/simulation2 8.0 0.2 8.0 0.2  
+/path/to/simulation3 12.0 0.5 12.0 0.5
 ```
 
-Each line contains: `simulation_path rmax_value zmax_value`
+Each line contains: `simulation_path rmax_depl zmax_depl rmax_dust zmax_dust`
+
+Note: The tool now supports different rmax/zmax values for depletion and dust content extraction, allowing for more flexible analysis of different galactic regions.
 
 ### Running the Extraction
 
@@ -181,31 +225,71 @@ The tool will automatically generate:
 - HDF5 file with extracted data
 - Comparison plots (PNG format) showing depletion trends
 
-## :chart_with_upwards_trend: Example: Reading and Plotting DTM Data ##
+## :chart_with_upwards_trend: Advanced Plotting and Visualization ##
 
-Here's how to read the extracted HDF5 file and plot the dust-to-metal ratios for all simulations:
+The package includes sophisticated plotting functions that use color coding and marker shapes to distinguish between simulation types, metallicities, and gas fraction models:
+
+### Built-in Plotting Functions
+
+The package provides two main plotting functions:
+
+1. **`plot_depletion_comparison()`**: Shows element depletion vs density for all simulations
+2. **`plot_dtm_dtg_vs_metallicity()`**: Displays dust-to-metal and dust-to-gas ratios vs measured metallicity
+
+### Visual Encoding System
+
+- **Colors**: Different simulation types (G8=Greens, G9=Blues, G10=Purples)
+- **Color intensity**: Initial metallicity within each simulation type (log scale normalization)
+- **Marker shapes**: 
+  - Circles (○): Regular gas fraction simulations
+  - Squares (□): Low gas fraction simulations (contain 'fg' in name)
+
+```python
+from plotting import plot_depletion_comparison, plot_dtm_dtg_vs_metallicity
+
+# Generate depletion comparison plots using sample data
+plot_depletion_comparison('depletion_data.h5', output_number=81)
+
+# Generate dust ratio plots using sample data
+plot_dtm_dtg_vs_metallicity('depletion_data.h5', output_number=81)
+```
+
+### Custom Analysis Example
+
+Here's how to read the sample HDF5 file and create custom plots:
 
 ```python
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_dtm_comparison(h5_filename, output_number=81):
+def plot_custom_dtm_analysis(h5_filename, output_number=81):
     """
-    Plot dust-to-metal ratios for all simulations and depletion configurations
+    Custom analysis showing DTM vs initial metallicity with simulation type and gas fraction encoding
     """
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(12, 8))
+    
+    # Color mapping for simulation types
+    colors = {'G8': 'green', 'G9': 'blue', 'G10': 'purple'}
     
     with h5py.File(h5_filename, 'r') as f:
         for sim_name in f.keys():
             sim_group = f[sim_name]
             
+            # Get simulation metadata
+            sim_type = sim_group.attrs.get('simulation_type', 'Unknown')
+            initial_metallicity = sim_group.attrs.get('initial_metallicity', 1.0)
+            
+            # Determine marker based on gas fraction
+            marker = 's' if 'fg' in sim_name.lower() else 'o'
+            gas_fraction_type = 'Low gas fraction' if 'fg' in sim_name.lower() else 'Regular gas fraction'
+            
             for depl_config in sim_group.keys():
                 depl_group = sim_group[depl_config]
                 
-                # Get the rmax and zmax values
-                rmax = depl_group.attrs['rmax_kpc']
-                zmax = depl_group.attrs['zmax_kpc']
+                # Get the rmax and zmax values for dust analysis
+                rmax_dust = depl_group.attrs.get('rmax_dust_kpc', depl_group.attrs.get('rmax_kpc', 0))
+                zmax_dust = depl_group.attrs.get('zmax_dust_kpc', depl_group.attrs.get('zmax_kpc', 0))
                 
                 # Read dust content data
                 dust_key = f'dust_content_{output_number:05d}'
@@ -217,32 +301,73 @@ def plot_dtm_comparison(h5_filename, output_number=81):
                     dtm_idx = columns.index('DTM')
                     dtm_value = dust_data[dtm_idx]
                     
-                    # Create label and plot
-                    label = f'{sim_name} (r={rmax:.1f}, z={zmax:.1f})'
-                    ax.scatter(rmax, dtm_value, label=label, s=100, alpha=0.7)
+                    # Plot with appropriate color and marker
+                    ax.scatter(initial_metallicity, dtm_value, 
+                             marker=marker, 
+                             color=colors.get(sim_type, 'gray'),
+                             s=120, alpha=0.7,
+                             label=f'{sim_type} - {gas_fraction_type}' if sim_name == list(f.keys())[0] else "")
     
-    ax.set_xlabel('Radial Extent (rmax) [kpc]')
+    # Create custom legends
+    # Simulation type legend
+    sim_legend_elements = [
+        plt.scatter([], [], color='green', marker='o', s=120, label='G8'),
+        plt.scatter([], [], color='blue', marker='o', s=120, label='G9'),
+        plt.scatter([], [], color='purple', marker='o', s=120, label='G10')
+    ]
+    leg1 = ax.legend(handles=sim_legend_elements, title="Simulation Type", 
+                     loc='upper left', frameon=True)
+    
+    # Gas fraction legend  
+    gas_legend_elements = [
+        plt.scatter([], [], color='gray', marker='o', s=120, label='Regular gas fraction'),
+        plt.scatter([], [], color='gray', marker='s', s=120, label='Low gas fraction (fg)')
+    ]
+    leg2 = ax.legend(handles=gas_legend_elements, title="Gas Fraction", 
+                     loc='upper right', frameon=True)
+    ax.add_artist(leg1)  # Add first legend back
+    
+    ax.set_xlabel('Initial Metallicity (Zsun)')
     ax.set_ylabel('Dust-to-Metal Ratio (DTM)')
-    ax.set_title(f'Dust-to-Metal Ratios - Output {output_number:05d}')
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.set_title(f'DTM vs Initial Metallicity - Output {output_number:05d}')
+    ax.set_xscale('log')
+    ax.set_yscale('log')
     ax.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig(f'dtm_comparison_output_{output_number:05d}.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'custom_dtm_analysis_output_{output_number:05d}.png', dpi=300, bbox_inches='tight')
     plt.show()
 
-# Usage example
-plot_dtm_comparison('output_data.h5', output_number=81)
+# Usage example with sample data
+plot_custom_dtm_analysis('depletion_data.h5', output_number=81)
 ```
 
 ### Reading Individual Data Components
 
 ```python
-# Read specific simulation data
-with h5py.File('output_data.h5', 'r') as f:
-    # Access a specific simulation and depletion configuration
-    sim_group = f['simulation_name']
-    depl_group = sim_group['DEPLETION_rmax4.0kpc_zmax1.0kpc']
+# Read specific simulation data from sample dataset
+with h5py.File('depletion_data.h5', 'r') as f:
+    # List all available simulations in the sample dataset
+    print("Available simulations:", list(f.keys()))
+    
+    # Access a specific simulation (note the underscore separator)
+    sim_name = list(f.keys())[0]  # Get first available simulation
+    sim_group = f[sim_name]
+    
+    # Get simulation metadata
+    sim_type = sim_group.attrs['simulation_type']  # e.g., 'G8'
+    initial_metallicity = sim_group.attrs['initial_metallicity']  # e.g., 0.1
+    original_path = sim_group.attrs['original_path']
+    
+    # Access depletion configuration
+    depl_config = list(sim_group.keys())[0]  # Get first available configuration
+    depl_group = sim_group[depl_config]
+    
+    # Get region parameters (now separate for depletion and dust)
+    rmax_depl = depl_group.attrs['rmax_depl_kpc']
+    zmax_depl = depl_group.attrs['zmax_depl_kpc'] 
+    rmax_dust = depl_group.attrs['rmax_dust_kpc']
+    zmax_dust = depl_group.attrs['zmax_dust_kpc']
     
     # Read depletion vs density data (2D array)
     depletion_data = depl_group['output_00081'][()]
@@ -258,9 +383,45 @@ with h5py.File('output_data.h5', 'r') as f:
     dtg = dust_data[columns.index('DTG')]
     metallicity = dust_data[columns.index('Z')]
     
+    print(f"Simulation: {sim_name}")
+    print(f"Simulation Type: {sim_type}")
+    print(f"Initial Metallicity: {initial_metallicity:.3f} Zsun")
     print(f"DTM: {dtm:.4f}")
     print(f"DTG: {dtg:.6f}")
-    print(f"Metallicity: {metallicity:.4f}")
+    print(f"Measured Metallicity: {metallicity:.4f}")
+    print(f"Gas fraction type: {'Low' if 'fg' in sim_name.lower() else 'Regular'}")
+
+# Example: Get all simulation types and metallicities from sample data
+def get_simulation_summary(h5_filename):
+    """Get summary of all simulations in the HDF5 file"""
+    with h5py.File(h5_filename, 'r') as f:
+        print("Simulation Summary:")
+        print("-" * 50)
+        for sim_name in f.keys():
+            sim_group = f[sim_name]
+            sim_type = sim_group.attrs.get('simulation_type', 'Unknown')
+            metallicity = sim_group.attrs.get('initial_metallicity', 'Unknown')
+            gas_fraction = 'Low' if 'fg' in sim_name.lower() else 'Regular'
+            
+            print(f"{sim_name}:")
+            print(f"  Type: {sim_type}")
+            print(f"  Initial Metallicity: {metallicity} Zsun")
+            print(f"  Gas Fraction: {gas_fraction}")
+            print(f"  Configurations: {list(sim_group.keys())}")
+            print()
+
+# Explore the sample dataset
+get_simulation_summary('depletion_data.h5')
+```
+
+### Sample Dataset Contents
+
+The included `depletion_data.h5` contains:
+- Multiple G8, G9, and G10 simulations
+- Various initial metallicity values (0.1, 0.3, 1.0, 3.0 Zsun)
+- Both regular and low gas fraction ('fg') models
+- Different spatial region configurations
+- All processed for output 81 (corresponding to specific simulation time)
 ```
 
 ## :memo: License ##
