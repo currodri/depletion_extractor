@@ -31,9 +31,16 @@ def plot_depletion_comparison(h5_filename, output_number):
     var_elements = ["varCdep", "varMgdep", "varFedep", "varSidep", "varOdep"]
     n_elements = len(elements)
 
+    # Define distinct marker and color combinations
+    markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h', 'H', '+', 'x', '8']
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', 
+              '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#aec7e8', '#ffbb78', 
+              '#98df8a', '#ff9896']
+
     fig, axes = plt.subplots(n_elements, 1, figsize=(5, 3* n_elements), sharex=True)
 
     with h5py.File(h5_filename, "r") as f:
+        sim_count = 0
         for sim_name in f:
             sim_group = f[sim_name]
             for depletion_config in sim_group:
@@ -42,6 +49,10 @@ def plot_depletion_comparison(h5_filename, output_number):
                 if output_key not in group:
                     continue
 
+                # Get unique marker and color for this simulation
+                marker = markers[sim_count % len(markers)]
+                color = colors[sim_count % len(colors)]
+                
                 label = f"{sim_name} / {depletion_config}"
                 data = group[output_key][()]
                 rho = data[:, DEP_IDX["rho"]]
@@ -50,9 +61,11 @@ def plot_depletion_comparison(h5_filename, output_number):
                     dep = data[:, DEP_IDX[elem]]
                     err = np.sqrt(data[:, DEP_IDX[var]])
                     axes[i].errorbar(
-                        rho, dep, yerr=err, fmt="o-", markersize=10,
-                        label=label, alpha=0.7, capsize=4
+                        rho, dep, yerr=err, fmt=f"{marker}-", markersize=10,
+                        label=label, alpha=0.7, capsize=4, color=color
                     )
+                
+                sim_count += 1
 
     # Format plots
     for i, elem in enumerate(elements):
@@ -80,7 +93,14 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
 
     OH_Asplund2009  = 4.9e-4 # Solar oxygen abundance (Asplund et al. 2009)
 
+    # Define distinct marker and color combinations
+    markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p', '*', 'h', 'H', '+', 'x', '8']
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', 
+              '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#aec7e8', '#ffbb78', 
+              '#98df8a', '#ff9896']
+
     with h5py.File(h5_filename, "r") as f:
+        sim_count = 0
         for sim_name in f:
             sim_group = f[sim_name]
             for depletion_config in sim_group:
@@ -89,6 +109,10 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
                 if output_key not in group:
                     continue
 
+                # Get unique marker and color for this simulation
+                marker = markers[sim_count % len(markers)]
+                color = colors[sim_count % len(colors)]
+                
                 label = f"{sim_name}"
                 data = group[output_key][()]
 
@@ -98,8 +122,10 @@ def plot_dtm_dtg_vs_metallicity(h5_filename, output_number):
                 dtm = data[DUST_IDX["DTM"]]
                 dtg = data[DUST_IDX["DTG"]]
 
-                ax1.scatter(metallicity, dtm, marker='o', label=label)
-                ax2.scatter(metallicity, dtg, marker='o', label=label)
+                ax1.scatter(metallicity, dtm, marker=marker, label=label, color=color, s=100)
+                ax2.scatter(metallicity, dtg, marker=marker, label=label, color=color, s=100)
+                
+                sim_count += 1
 
     ax1.set_xlabel(r"$(O/H)/(O/H)_\odot$")
     ax1.set_ylabel("Dust-to-Metal Ratio (DTM)")
