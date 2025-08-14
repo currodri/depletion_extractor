@@ -54,6 +54,7 @@ def get_simulation_info_from_path(h5_filename):
                 # If path was stored during extraction, use it to determine simulation type
                 if 'path' in group.attrs:
                     path = group.attrs['path']
+                    print(f"Processing path: {path}")
                     # Extract simulation type from path structure: /root/simulation_type/simulation_name
                     path_parts = path.split('/')
                     if len(path_parts) >= 3:
@@ -74,6 +75,7 @@ def get_simulation_info_from_path(h5_filename):
                         raise ValueError(f"Invalid path structure: {path}")
                 else:
                     # Fallback: Extract simulation type from simulation name
+                    print(f"Processing simulation name: {sim_name}")
                     if '1d10' in sim_name:
                         sim_types[sim_name] = 'G8'
                     elif '1d11' in sim_name:
