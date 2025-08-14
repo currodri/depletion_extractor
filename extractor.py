@@ -30,18 +30,19 @@ def load_depletion_file(filepath):
     """
     return np.loadtxt(filepath)
 
-def process_simulation(sim_path, h5file, output_number, target_rmax, target_zmax):
+def process_simulation(sim_path, h5file, output_number, target_rmax_depl, target_zmax_depl, target_rmax_dust, target_zmax_dust):
     """
-    Processes one simulation directory for a specific rmax/zmax configuration:
-    - Finds the specific depletion folder matching rmax/zmax.
+    Processes one simulation directory for specific rmax/zmax configurations:
+    - Finds the specific depletion folder matching rmax_depl/zmax_depl.
     - Extracts only the specified depletion_output_XXXXX.txt file.
+    - Finds dust content file matching rmax_dust/zmax_dust.
     - Stores the output as a dataset inside an HDF5 group.
     """
     sim_name = get_sim_name(sim_path)
     sim_group = h5file.require_group(sim_name)
 
     # Construct the expected depletion folder name
-    depletion_folder = f"DEPLETION_rmax{target_rmax}kpc_zmax{target_zmax}kpc"
+    depletion_folder = f"DEPLETION_rmax{target_rmax_depl}kpc_zmax{target_zmax_depl}kpc"
     full_depl_path = os.path.join(sim_path, depletion_folder)
     
     if not os.path.exists(full_depl_path):
@@ -50,13 +51,10 @@ def process_simulation(sim_path, h5file, output_number, target_rmax, target_zmax
 
     # Create HDF5 group for this depletion config
     depletion_group = sim_group.require_group(depletion_folder)
-    depletion_group.attrs["rmax_kpc"] = target_rmax
-    depletion_group.attrs["zmax_kpc"] = target_zmax
-
-    # Create HDF5 group for this depletion config
-    depletion_group = sim_group.require_group(depletion_folder)
-    depletion_group.attrs["rmax_kpc"] = target_rmax
-    depletion_group.attrs["zmax_kpc"] = target_zmax
+    depletion_group.attrs["rmax_depl_kpc"] = target_rmax_depl
+    depletion_group.attrs["zmax_depl_kpc"] = target_zmax_depl
+    depletion_group.attrs["rmax_dust_kpc"] = target_rmax_dust
+    depletion_group.attrs["zmax_dust_kpc"] = target_zmax_dust
 
     # Find the specific depletion_output_XXXXX.txt file
     target_filename = f"depletion_output_{output_number:05d}.txt"
@@ -74,7 +72,7 @@ def process_simulation(sim_path, h5file, output_number, target_rmax, target_zmax
     # Find the corresponding dust content file
     dust_content_folder = os.path.join(sim_path, "DustContent")
     if os.path.exists(dust_content_folder):
-        dust_filename = f"dust_content_gal_rcyl{target_rmax}kpc_zcyl{target_zmax}kpc_output_{output_number:05d}.txt"
+        dust_filename = f"dust_content_gal_rcyl{target_rmax_dust}kpc_zcyl{target_zmax_dust}kpc_output_{output_number:05d}.txt"
         dust_filepath = os.path.join(dust_content_folder, dust_filename)
         
         if os.path.exists(dust_filepath):
@@ -112,9 +110,9 @@ def process_simulation(sim_path, h5file, output_number, target_rmax, target_zmax
 def read_sim_paths_from_file(file_path):
     """
     Reads a list of simulation paths with rmax and zmax from a text file.
-    Expected format: path rmax zmax (space-separated)
+    Expected format: path rmax_depl zmax_depl rmax_dust zmax_dust (space-separated)
     Skips empty lines and comments (lines starting with '#').
-    Returns: List of tuples (path, rmax, zmax)
+    Returns: List of tuples (path, rmax_depl, zmax_depl, rmax_dust, zmax_dust)
     """
     sim_configs = []
     with open(file_path, "r") as f:
@@ -126,17 +124,19 @@ def read_sim_paths_from_file(file_path):
             continue
         
         parts = line.split()
-        if len(parts) != 3:
-            print(f"Warning: Invalid format in line '{line}'. Expected: path rmax zmax")
+        if len(parts) != 5:
+            print(f"Warning: Invalid format in line '{line}'. Expected: path rmax_depl zmax_depl rmax_dust zmax_dust")
             continue
         
         try:
             path = parts[0]
-            rmax = float(parts[1])
-            zmax = float(parts[2])
-            sim_configs.append((path, rmax, zmax))
+            rmax_depl = float(parts[1])
+            zmax_depl = float(parts[2])
+            rmax_dust = float(parts[3])
+            zmax_dust = float(parts[4])
+            sim_configs.append((path, rmax_depl, zmax_depl, rmax_dust, zmax_dust))
         except ValueError:
-            print(f"Warning: Could not parse rmax/zmax from line '{line}'")
+            print(f"Warning: Could not parse rmax/zmax values from line '{line}'")
             continue
     
     return sim_configs
@@ -149,9 +149,9 @@ def main(path_list_file, output_hdf5, output_number):
     sim_configs = read_sim_paths_from_file(path_list_file)
 
     with h5py.File(output_hdf5, "w") as h5file:
-        for sim_path, rmax, zmax in sim_configs:
+        for sim_path, rmax_depl, zmax_depl, rmax_dust, zmax_dust in sim_configs:
             if not os.path.isdir(sim_path):
                 print(f"Skipping invalid path: {sim_path}")
                 continue
-            print(f"Processing simulation: {sim_path} (rmax={rmax}, zmax={zmax})")
-            process_simulation(sim_path, h5file, output_number, rmax, zmax)
+            print(f"Processing simulation: {sim_path} (depl: rmax={rmax_depl}, zmax={zmax_depl}; dust: rmax={rmax_dust}, zmax={zmax_dust})")
+            process_simulation(sim_path, h5file, output_number, rmax_depl, zmax_depl, rmax_dust, zmax_dust)
