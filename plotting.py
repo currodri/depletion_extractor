@@ -133,7 +133,6 @@ def plot_depletion_comparison(h5_filename, output_number):
         type_metallicities = [metallicities[sim_name] for sim_name, s_type in sim_types.items() if s_type == sim_type]
         if len(set(type_metallicities)) > 1:
             type_norms[sim_type] = LogNorm(vmin=min(type_metallicities), vmax=max(type_metallicities))
-            type_norms[sim_type] = plt.LogNorm(vmin=min(type_metallicities), vmax=max(type_metallicities))
         else:
             # If all metallicities are the same for this type, use a single color
             type_norms[sim_type] = plt.Normalize(vmin=0, vmax=1)
