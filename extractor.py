@@ -36,7 +36,7 @@ def load_depletion_file(filepath):
     """
     return np.loadtxt(filepath)
 
-def process_simulation(sim_path, h5file, output_number, target_rmax_depl, target_zmax_depl, target_rmax_dust, target_zmax_dust):
+def process_simulation(sim_path, h5file, output_numbers, target_rmax_depl, target_zmax_depl, target_rmax_dust, target_zmax_dust):
     """
     Processes one simulation directory for specific rmax/zmax configurations:
     - Finds the specific depletion folder matching rmax_depl/zmax_depl.
@@ -93,56 +93,81 @@ def process_simulation(sim_path, h5file, output_number, target_rmax_depl, target
     depletion_group.attrs["zmax_dust_kpc"] = target_zmax_dust
     depletion_group.attrs["path"] = sim_path  # Store original path for simulation type detection
 
-    # Find the specific depletion_output_XXXXX.txt file
-    target_filename = f"depletion_output_{output_number:05d}.txt"
-    target_filepath = os.path.join(full_depl_path, target_filename)
-    
-    if os.path.exists(target_filepath):
-        data = load_depletion_file(target_filepath)
-        # Create a dataset for this output
-        dset_name = f"output_{output_number:05d}"
-        if dset_name not in depletion_group:
-            depletion_group.create_dataset(dset_name, data=data)
-    else:
-        print(f"Warning: {target_filename} not found in {depletion_folder}")
-    
-    # Find the corresponding dust content file
+    # Allow processing multiple outputs at once. output_numbers can be a single int or an iterable of ints.
+    try:
+        iterable = iter(output_numbers)
+        # if it's a string, don't treat it as iterable of chars
+        if isinstance(output_numbers, (str, bytes)):
+            raise TypeError
+    except TypeError:
+        iterable = [output_numbers]
+
+    # Find the dust content folder once
     dust_content_folder = os.path.join(sim_path, "DustContent")
-    if os.path.exists(dust_content_folder):
-        dust_filename = f"dust_content_gal_rcyl{target_rmax_dust}kpc_zcyl{target_zmax_dust}kpc_output_{output_number:05d}.txt"
-        dust_filepath = os.path.join(dust_content_folder, dust_filename)
-        
-        if os.path.exists(dust_filepath):
-            # Read the single line of dust content data
-            with open(dust_filepath, 'r') as f:
-                dust_line = f.readline().strip()
-                dust_values = np.array([float(x) for x in dust_line.split()])
+    dust_folder_exists = os.path.exists(dust_content_folder)
 
-            # Compute the dust-to-metal and dust-to-gas ratios
-            dust_values[-2:] = dust_values[-2:] / SioverSil # Correcting the silicate dust masses
-            DTM = np.sum(dust_values[-4:]) / dust_values[2] if dust_values[2] != 0 else 0 # Dust-to-metal ratio
-            DTG = np.sum(dust_values[-4:]) / dust_values[1] if dust_values[1] != 0 else 0 # Dust-to-gas ratio
-            print(f"DTM: {DTM}, DTG: {DTG} for {dust_filename}")
-            Z   = dust_values[2] / dust_values[1] if dust_values[1] != 0 else 0 # Metallicity
-            dust_values = np.append(dust_values, [DTM, DTG, Z])  # Append ratios to the dust values
+    for out in iterable:
+        try:
+            out_int = int(out)
+        except Exception:
+            print(f"Warning: invalid output number '{out}' for {sim_path}; skipping")
+            continue
 
-            # Create a dataset for dust content
-            dust_dset_name = f"dust_content_{output_number:05d}"
-            if dust_dset_name not in depletion_group:
-                depletion_group.create_dataset(dust_dset_name, data=dust_values)
-                
-                # Add column names as attributes for reference
-                dust_columns = [
-                    "time", "gas_mass", "metal_mass", "H_mass", "O_mass", 
-                    "Fe_mass", "Mg_mass", "C_mass", "N_mass", "Si_mass", 
-                    "S_mass", "D_mass", "Csmall_mass", "Clarge_mass", 
-                    "Silsmall_mass", "Sillarge_mass", "DTM", "DTG", "Z"
-                ]
-                depletion_group.attrs["dust_content_columns"] = dust_columns
+        # Depletion file
+        target_filename = f"depletion_output_{out_int:05d}.txt"
+        target_filepath = os.path.join(full_depl_path, target_filename)
+
+        if os.path.exists(target_filepath):
+            data = load_depletion_file(target_filepath)
+            # Create a dataset for this output
+            dset_name = f"output_{out_int:05d}"
+            if dset_name not in depletion_group:
+                depletion_group.create_dataset(dset_name, data=data)
         else:
-            print(f"Warning: {dust_filename} not found in DustContent folder")
-    else:
-        print(f"Warning: DustContent folder not found in {sim_path}")
+            print(f"Warning: {target_filename} not found in {depletion_folder}")
+
+        # Dust content file (if available)
+        if dust_folder_exists:
+            dust_filename = f"dust_content_gal_rcyl{target_rmax_dust}kpc_zcyl{target_zmax_dust}kpc_output_{out_int:05d}.txt"
+            dust_filepath = os.path.join(dust_content_folder, dust_filename)
+
+            if os.path.exists(dust_filepath):
+                # Read the single line of dust content data
+                with open(dust_filepath, 'r') as f:
+                    dust_line = f.readline().strip()
+                    try:
+                        dust_values = np.array([float(x) for x in dust_line.split()])
+                    except Exception:
+                        print(f"Warning: could not parse dust content in {dust_filepath}")
+                        continue
+
+                # Compute the dust-to-metal and dust-to-gas ratios
+                if dust_values.size >= 6:
+                    # Correcting the silicate dust masses (assumes last two silicate columns)
+                    dust_values[-2:] = dust_values[-2:] / SioverSil
+                DTM = np.sum(dust_values[-4:]) / dust_values[2] if dust_values.size > 2 and dust_values[2] != 0 else 0
+                DTG = np.sum(dust_values[-4:]) / dust_values[1] if dust_values.size > 1 and dust_values[1] != 0 else 0
+                print(f"DTM: {DTM}, DTG: {DTG} for {dust_filename}")
+                Z   = dust_values[2] / dust_values[1] if dust_values.size > 1 and dust_values[1] != 0 else 0
+                dust_values = np.append(dust_values, [DTM, DTG, Z])  # Append ratios to the dust values
+
+                # Create a dataset for dust content
+                dust_dset_name = f"dust_content_{out_int:05d}"
+                if dust_dset_name not in depletion_group:
+                    depletion_group.create_dataset(dust_dset_name, data=dust_values)
+
+                    # Add column names as attributes for reference
+                    dust_columns = [
+                        "time", "gas_mass", "metal_mass", "H_mass", "O_mass", 
+                        "Fe_mass", "Mg_mass", "C_mass", "N_mass", "Si_mass", 
+                        "S_mass", "D_mass", "Csmall_mass", "Clarge_mass", 
+                        "Silsmall_mass", "Sillarge_mass", "DTM", "DTG", "Z"
+                    ]
+                    depletion_group.attrs["dust_content_columns"] = dust_columns
+            else:
+                print(f"Warning: {dust_filename} not found in DustContent folder")
+        else:
+            print(f"Warning: DustContent folder not found in {sim_path}")
 
 def read_sim_paths_from_file(file_path):
     """
@@ -178,10 +203,10 @@ def read_sim_paths_from_file(file_path):
     
     return sim_configs
 
-def main(path_list_file, output_hdf5, output_number):
+def main(path_list_file, output_hdf5, output_numbers):
     """
     Main routine to process all simulation paths with specific rmax/zmax and store results in one HDF5 file.
-    Only extracts the specified output number for the specified depletion configurations.
+    Accepts a single output number or an iterable (list/range) of output numbers to extract for each simulation.
     """
     sim_configs = read_sim_paths_from_file(path_list_file)
 
@@ -191,4 +216,4 @@ def main(path_list_file, output_hdf5, output_number):
                 print(f"Skipping invalid path: {sim_path}")
                 continue
             print(f"Processing simulation: {sim_path} (depl: rmax={rmax_depl}, zmax={zmax_depl}; dust: rmax={rmax_dust}, zmax={zmax_dust})")
-            process_simulation(sim_path, h5file, output_number, rmax_depl, zmax_depl, rmax_dust, zmax_dust)
+            process_simulation(sim_path, h5file, output_numbers, rmax_depl, zmax_depl, rmax_dust, zmax_dust)

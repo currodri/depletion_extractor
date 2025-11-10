@@ -164,6 +164,28 @@ $ python main.py path_list.txt -f output_data.h5 -o 81
 # -o 81            : Output number to extract (optional, default: 81)
 ```
 
+### Output specification (single, list, or range)
+
+The `-o/--outputs` option now accepts either a single output number, a comma-separated list, or an inclusive range. Examples:
+
+```bash
+# Single output (backwards compatible)
+$ python main.py path_list.txt -f output_data.h5 -o 81
+
+# Comma-separated list of specific outputs
+$ python main.py path_list.txt -f output_data.h5 -o 10,20,30
+
+# Inclusive range of outputs (extracts every output between 10 and 20)
+$ python main.py path_list.txt -f output_data.h5 -o 10-20
+
+# Combined list+range (mix works too)
+$ python main.py path_list.txt -f output_data.h5 -o 5,10-12,20
+```
+
+Notes:
+- When multiple outputs are requested, the extractor will write datasets for each output into the same HDF5 file under each simulation's depletion group (e.g. `output_00010`, `output_00011`, ...).
+- Automatic plotting is only performed when a single output is requested (to avoid clutter). If you supply multiple outputs, the script will skip plotting and only produce the HDF5 file; you can still plot any extracted output later by calling the plotting functions or re-running `main.py` with a single `-o` value.
+
 ### Expected Directory Structure
 
 Each simulation directory should contain:
