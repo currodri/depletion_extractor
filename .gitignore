@@ -128,14 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Scientific Python / Data Science
-*.h5
-*.hdf5
-*.nc
-*.npz
-*.pkl
-*.pickle
-
 # Output files specific to this project
 depletion_data.h5
 output_data.h5
